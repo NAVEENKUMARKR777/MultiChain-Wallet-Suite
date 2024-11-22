@@ -1,0 +1,11 @@
+web3==4.8.2
+mnemonic==0.20
+bitcoin==1.1.42
+eth-account==0.3.0
+python-dotenv==1.0.0
+py-solc-x==1.1.1
+base58==2.1.1
+ecdsa==0.18.0
+flask==2.0.1
+werkzeug==2.0.3
+eth-utils==1.2.2

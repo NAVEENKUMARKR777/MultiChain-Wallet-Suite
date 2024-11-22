@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiChain Wallet Suite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+            color: #2d3748;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin-bottom: 25px;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .btn {
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
+            transform: translateY(-1px);
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+        }
+        .form-control:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+        }
+        .network-badge {
+            font-size: 0.8em;
+            padding: 0.3em 0.8em;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .copy-button {
+            cursor: pointer;
+            color: #718096;
+            transition: color 0.2s;
+        }
+        .copy-button:hover {
+            color: #4299e1;
+        }
+        .wallet-info {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .recipient-group {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        .remove-recipient {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: #718096;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .remove-recipient:hover {
+            color: #e53e3e;
+        }
+        .alert {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .total-amount {
+            background: #ebf8ff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border: 1px solid #bee3f8;
+        }
+        #loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-wallet me-2"></i>
+                MultiChain Wallet Suite
+            </a>
+            <span class="badge bg-info">Testnet</span>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <!-- Wallet Generation Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-key me-2"></i>
+                    Wallet Generation
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="generate-wallet-form">
+                    <div class="mb-3">
+                        <label for="mnemonic" class="form-label">Mnemonic Phrase (Optional)</label>
+                        <input type="text" class="form-control" id="mnemonic" 
+                               placeholder="Enter existing mnemonic or leave blank for new wallet">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Generate Wallets
+                    </button>
+                </form>
+                
+                <div id="wallet-info" class="mt-4" style="display: none;">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> Save your mnemonic phrase securely! It's the only way to recover your wallets.
+                    </div>
+                    
+                    <div class="wallet-info">
+                        <h5>Mnemonic Phrase</h5>
+                        <div class="position-relative bg-light p-3 rounded">
+                            <span id="mnemonic-text"></span>
+                            <i class="fas fa-copy copy-button position-absolute top-0 end-0 m-3" 
+                               onclick="copyToClipboard('mnemonic-text')"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="ethereum-wallet" class="wallet-info">
+                        <h5>
+                            <i class="fab fa-ethereum me-2"></i>
+                            Ethereum Wallet 
+                            <span class="network-badge bg-info text-white">Sepolia</span>
+                        </h5>
+                        <div class="mt-3">
+                            <p class="mb-2">
+                                <strong>Address:</strong>
+                                <span id="eth-address" class="ms-2"></span>
+                                <i class="fas fa-copy copy-button ms-2" onclick="copyToClipboard('eth-address')"></i>
+                            </p>
+                            <p class="mb-0">
+                                <strong>Private Key:</strong>
+                                <span id="eth-private-key" class="ms-2"></span>
+                                <i class="fas fa-copy copy-button ms-2" onclick="copyToClipboard('eth-private-key')"></i>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Similar sections for Bitcoin and Tron wallets -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    Send Transaction
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="send-transaction-form">
+                    <div class="mb-3">
+                        <label for="chain-select" class="form-label">Select Chain</label>
+                        <select class="form-select" id="chain-select" required>
+                            <option value="ethereum">Ethereum (Sepolia)</option>
+                            <option value="bitcoin" disabled>Bitcoin (Coming Soon)</option>
+                            <option value="tron" disabled>Tron (Coming Soon)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="from-private-key" class="form-label">From (Private Key)</label>
+                        <input type="text" class="form-control" id="from-private-key" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="to-address" class="form-label">To Address</label>
+                        <input type="text" class="form-control" id="to-address" pattern="^0x[a-fA-F0-9]{40}$" required 
+                               title="Ethereum address should start with 0x and be 42 characters long">
+                        <div class="form-text">Must be a valid Ethereum address starting with 0x</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" step="0.000001" class="form-control" id="amount" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Send Transaction
+                    </button>
+                </form>
+                
+                <div id="transaction-result" class="mt-4" style="display: none;">
+                    <div class="alert alert-success">
+                        <h5>Transaction Sent!</h5>
+                        <p><strong>Transaction Hash:</strong> <span id="transaction-hash"></span>
+                            <i class="fas fa-copy copy-button ms-2" onclick="copyToClipboard('transaction-hash')"></i>
+                        </p>
+                    </div>
+                </div>
+                
+                <div id="transaction-error" class="mt-4 alert alert-danger" style="display: none;">
+                    <h5>Error</h5>
+                    <p id="error-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Check Section -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-balance-scale me-2"></i>
+                    Check Balance
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="check-balance-form">
+                    <div class="mb-3">
+                        <label for="balance-chain-select" class="form-label">Select Chain</label>
+                        <select class="form-select" id="balance-chain-select" required>
+                            <option value="ethereum">Ethereum (Sepolia)</option>
+                            <option value="bitcoin" disabled>Bitcoin (Coming Soon)</option>
+                            <option value="tron" disabled>Tron (Coming Soon)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="balance-address" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="balance-address" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-balance-scale me-2"></i>
+                        Check Balance
+                    </button>
+                </form>
+                
+                <div id="balance-result" class="mt-4" style="display: none;">
+                    <div class="alert alert-info">
+                        <h5>Balance</h5>
+                        <p><span id="balance-amount"></span> <span id="balance-currency"></span></p>
+                    </div>
+                </div>
+                
+                <div id="balance-error" class="mt-4 alert alert-danger" style="display: none;">
+                    <h5>Error</h5>
+                    <p id="balance-error-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contracts Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-file-contract me-2"></i>
+                    Deployed Contracts
+                </h4>
+            </div>
+            <div class="card-body">
+                <div id="contracts-list">
+                    <!-- Contracts will be loaded here -->
+                </div>
+                
+                <!-- MultiWithdraw Form -->
+                <div id="multiwithdraw-form" class="mt-4" style="display: none;">
+                    <h5>
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Multi-Address Withdrawal
+                    </h5>
+                    <form id="multi-withdraw-form">
+                        <div class="mb-3">
+                            <label for="mw-private-key" class="form-label">From (Private Key)</label>
+                            <input type="text" class="form-control" id="mw-private-key" required>
+                        </div>
+                        
+                        <div id="recipients-container"></div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-secondary" onclick="addRecipient()">
+                                <i class="fas fa-plus me-2"></i>
+                                Add Recipient
+                            </button>
+                        </div>
+                        
+                        <div class="total-amount">
+                            <strong>Total Amount:</strong> <span id="total-eth">0</span> ETH
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Send to All Recipients
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
